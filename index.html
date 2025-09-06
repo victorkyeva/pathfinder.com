@@ -1,0 +1,647 @@
+﻿<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pathfinder - Smarter Indoor Navigation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom colors and fonts based on the style guide */
+        :root {
+            --deep-blue: #1E3A8A;
+            --bright-green: #22C55E;
+            --soft-gray: #F3F4F6;
+            --soft-green-tint: #DCFCE7;
+            --dark-gray: #111827;
+        }
+
+        body {
+            font-family: 'Lato', sans-serif;
+            background-color: var(--soft-gray);
+            /* Increased contrast for better readability */
+            color: #333333; 
+            line-height: 1.7; /* Added line-height for better text flow */
+        }
+
+        h1, h2, h3 {
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+        }
+
+        .bg-deep-blue { background-color: var(--deep-blue); }
+        .text-deep-blue { color: var(--deep-blue); }
+        .bg-bright-green { background-color: var(--bright-green); }
+        .text-bright-green { color: var(--bright-green); }
+        .bg-soft-gray { background-color: var(--soft-gray); }
+        .bg-soft-green-tint { background-color: var(--soft-green-tint); }
+        .hover-deep-blue:hover { background-color: #1a3274; }
+        .hover-bright-green:hover { background-color: #1A9E4A; }
+        .hover-white-outline:hover { background-color: rgba(255, 255, 255, 0.1); }
+
+        .section-padding {
+            @apply py-20 md:py-32;
+        }
+
+        .button-primary {
+            @apply bg-bright-green text-white font-semibold py-3 px-8 rounded-lg shadow-md hover-bright-green transition-all duration-200 transform hover:scale-105;
+        }
+
+        .button-secondary {
+            @apply bg-transparent text-white border-2 border-white font-semibold py-3 px-8 rounded-lg shadow-md hover:bg-white hover:text-deep-blue transition-all duration-200;
+        }
+        
+        /* Custom message box styles */
+        .message-box {
+            @apply fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg shadow-xl text-center;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .testimonial-track {
+            display: flex;
+            transition-property: transform;
+            transition-duration: 500ms;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Hero section specific styles for the image carousel */
+        .carousel-item {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+        }
+
+        .carousel-item.active {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- A simple message to test if anything is rendering -->
+    <div style="text-align: center; padding-top: 50px; font-size: 24px; color: green;">
+        Pathfinder - Loading Content...
+    </div>
+
+    <!-- Message Box for non-alert messages -->
+    <div id="message-box" class="message-box">
+        <div class="flex flex-col items-center">
+            <svg class="w-12 h-12 text-bright-green mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p class="text-xl font-semibold mb-2" id="message-title">Success!</p>
+            <p class="text-gray-600 mb-4" id="message-content">Your action was completed.</p>
+            <button onclick="closeMessageBox()" class="bg-deep-blue text-white font-medium py-2 px-6 rounded-full hover-deep-blue transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">OK</button>
+        </div>
+    </div>
+    
+    <!-- 1. Header (Navigation Bar) -->
+    <header class="bg-deep-blue shadow-sm sticky top-0 z-50">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+            <a href="#home" class="flex items-center space-x-2">
+                <span class="text-2xl font-bold text-white">Pathfinder</span>
+            </a>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="#home" class="text-gray-200 hover:text-white transition-colors duration-200">Home</a>
+                <a href="#about" class="text-gray-200 hover:text-white transition-colors duration-200">About</a>
+                <a href="#how-it-works" class="text-gray-200 hover:text-white transition-colors duration-200">How It Works</a>
+                <a href="#benefits" class="text-gray-200 hover:text-white transition-colors duration-200">Benefits</a>
+                <a href="#pricing" class="text-gray-200 hover:text-white transition-colors duration-200">Pricing</a>
+                <a href="#contact" class="text-gray-200 hover:text-white transition-colors duration-200">Contact</a>
+                <a href="#contact" class="bg-bright-green text-white font-semibold py-2 px-6 rounded-lg shadow-md hover-bright-green transition-colors duration-200">
+                    Request a Demo
+                </a>
+            </div>
+            <!-- Mobile Menu Button -->
+            <button class="md:hidden text-gray-200 hover:text-white focus:outline-none" onclick="toggleMenu()">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                </svg>
+            </button>
+        </nav>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-deep-blue shadow-lg py-4">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#home" onclick="toggleMenu()" class="block px-3 py-2 rounded-md text-base font-medium text-gray-200 hover:bg-deep-blue">Home</a>
+                <a href="#about" onclick="toggleMenu()" class="block px-3 py-2 rounded-md text-base font-medium text-gray-200 hover:bg-deep-blue">About</a>
+                <a href="#how-it-works" onclick="toggleMenu()" class="block px-3 py-2 rounded-md text-base font-medium text-gray-200 hover:bg-deep-blue">How It Works</a>
+                <a href="#benefits" onclick="toggleMenu()" class="block px-3 py-2 rounded-md text-base font-medium text-gray-200 hover:bg-deep-blue">Benefits</a>
+                <a href="#pricing" onclick="toggleMenu()" class="block px-3 py-2 rounded-md text-base font-medium text-gray-200 hover:bg-deep-blue">Pricing</a>
+                <a href="#contact" onclick="toggleMenu()" class="block px-3 py-2 rounded-md text-base font-medium text-gray-200 hover:bg-deep-blue">Contact</a>
+                <a href="#contact" onclick="toggleMenu()" class="block px-3 py-2 rounded-lg font-semibold bg-bright-green text-white text-center mt-4">
+                    Request a Demo
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8">
+
+        <!-- 2. Hero Section with Image Carousel -->
+        <section id="home" class="relative min-h-[500px] flex items-center justify-center overflow-hidden rounded-xl shadow-lg">
+            
+            <!-- Carousel Images -->
+            <div id="carousel" class="absolute inset-0 z-0">
+                <div class="carousel-item active" style="background-image: url('https://placehold.co/1920x1080/1E3A8A/F3F4F6?text=Modern+shopping+mall+interior');"></div>
+                <div class="carousel-item" style="background-image: url('https://placehold.co/1920x1080/1E3A8A/F3F4F6?text=Mall+corridor+with+digital+signboards');"></div>
+                <div class="carousel-item" style="background-image: url('https://placehold.co/1920x1080/1E3A8A/F3F4F6?text=Mall+with+escalators/elevators');"></div>
+                <div class="carousel-item" style="background-image: url('https://placehold.co/1920x1080/1E3A8A/F3F4F6?text=Aerial+indoor+atrium+with+people+walking');"></div>
+            </div>
+
+            <!-- Semi-transparent dark blue overlay -->
+            <div class="absolute inset-0 z-10 bg-deep-blue opacity-80"></div>
+
+            <!-- Content Overlaid on Images -->
+            <div class="relative z-20 max-w-4xl mx-auto text-white text-center p-8">
+                <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold leading-tight mb-6">
+                    Elevate Your Digital Presence
+                </h1>
+                <p class="text-lg sm:text-xl mb-8 max-w-2xl mx-auto">
+                    A compelling website isn't just a luxury—it's a necessity. It is the heart of your brand's story.
+                </p>
+                <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
+                    <a href="#benefits" class="button-primary">
+                        Get Started
+                    </a>
+                    <a href="#pricing" class="button-secondary">
+                        See Pricing
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. About Us Section -->
+        <section id="about" class="section-padding bg-white rounded-xl shadow-lg mb-20 text-center">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center max-w-5xl mx-auto">
+                <div>
+                    <h2 class="text-3xl font-bold text-dark-gray mb-6 text-center md:text-left">About Us</h2>
+                    <p class="text-lg text-gray-600 mb-4 text-center md:text-left">
+                        Our mission is to build the future of indoor navigation in Africa. We are committed to developing innovative AI and mapping solutions that make every indoor journey seamless and stress-free.
+                    </p>
+                    <p class="text-lg text-gray-600 mb-4 text-center md:text-left">
+                        We work with building managers, facility planners, and business owners to solve the complex challenges of wayfinding in large venues like airports, hospitals, corporate campuses, and shopping malls.
+                    </p>
+                    <p class="text-lg text-gray-600 mb-4 text-center md:text-left">
+                        Our vision is to empower people to navigate any indoor space with the same ease and confidence they feel with outdoor GPS.
+                    </p>
+                </div>
+                <div class="order-first md:order-last">
+                    <img src="https://placehold.co/600x400/94A3B8/ffffff?text=Our+Team" alt="A professional team working together" class="w-full h-auto rounded-lg shadow-md" />
+                </div>
+            </div>
+        </section>
+
+        <!-- 3.5. New Section: Our Story & Vision -->
+        <section id="story-vision" class="section-padding bg-white rounded-xl shadow-lg mb-20">
+            <div class="max-w-4xl mx-auto">
+                <h2 class="text-3xl font-bold text-dark-gray mb-6 text-center">Our Story & Vision</h2>
+                <p class="text-lg text-gray-600 mb-6 text-center">
+                    Pathfinder was born from a simple observation: while outdoor navigation has become effortless with GPS, finding your way around large, complex indoor spaces remains a challenge. We saw people getting lost in busy malls, missing appointments in vast hospitals, and struggling to find their way in corporate campuses.
+                </p>
+                <p class="text-lg text-gray-600 mb-6 text-center">
+                    Our team of innovators and engineers set out to solve this problem by combining advanced AI, precise location technology, and intuitive design. We don't just create maps; we create intelligent, dynamic routes that adapt to real-time conditions, such as closures or crowded areas, to ensure a smooth journey.
+                </p>
+                <p class="text-lg text-gray-600 text-center">
+                    Today, our vision is to be the leading indoor navigation platform, not just in Africa, but globally. We are dedicated to continuously improving our technology to make every indoor journey as simple, efficient, and enjoyable as possible, unlocking the full potential of smart buildings.
+                </p>
+            </div>
+        </section>
+
+        <!-- 4. How It Works Section -->
+        <section id="how-it-works" class="section-padding mb-20">
+            <h2 class="text-3xl font-bold text-center text-dark-gray mb-12">How It Works</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-5xl mx-auto">
+                <!-- Step 1 -->
+                <div class="flex flex-col items-center text-center p-6 bg-white rounded-xl shadow-lg">
+                    <svg class="w-16 h-16 mb-4 text-deep-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18.25l-2.6 1.4L8.5 16.5l-2.6-1.4 1.4-2.6L8.5 10.5l1.4-2.6-1.4-2.6L8.5 2.5l2.6-1.4 2.6 1.4-1.4 2.6L15.5 8.5l-1.4 2.6L15.5 13.5l-1.4 2.6L15.5 18.5l-2.6 1.4-2.6-1.4"></path>
+                    </svg>
+                    <h3 class="text-xl font-semibold mb-2 mt-4">1. Open the App</h3>
+                    <p class="text-gray-600">
+                        Download the app and instantly get access to digital maps of your favorite buildings.
+                    </p>
+                </div>
+                <!-- Step 2 -->
+                <div class="flex flex-col items-center text-center p-6 bg-white rounded-xl shadow-lg">
+                    <svg class="w-16 h-16 mb-4 text-deep-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <h3 class="text-xl font-semibold mb-2">2. Choose Your Destination</h3>
+                    <p class="text-gray-600">
+                        Search for a shop, office, or amenity and select your destination from the directory.
+                    </p>
+                </div>
+                <!-- Step 3 -->
+                <div class="flex flex-col items-center text-center p-6 bg-white rounded-xl shadow-lg">
+                    <svg class="w-16 h-16 mb-4 text-deep-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM15.5 12c0 .83-.67 1.5-1.5 1.5H12c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5h2c.83 0 1.5.67 1.5 1.5zm-3.5-3.5c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5.67 1.5 1.5 1.5 1.5-.67 1.5-1.5zM12 16.5c-2.48 0-4.5-2.02-4.5-4.5S9.52 7.5 12 7.5s4.5 2.02 4.5 4.5-2.02 4.5-4.5 4.5z" />
+                    </svg>
+                    <h3 class="text-xl font-semibold mb-2">3. Follow the Smart Path</h3>
+                    <p class="text-gray-600">
+                        Receive real-time, turn-by-turn directions and reach your destination with ease.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Benefits Section -->
+        <section id="benefits" class="section-padding bg-white rounded-xl shadow-lg mb-20">
+            <h2 class="text-3xl font-bold text-center text-dark-gray mb-12">Benefits</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 px-8 max-w-6xl mx-auto">
+                <!-- Benefit 1: Visitors -->
+                <div class="p-6 rounded-lg shadow-md border-2 border-gray-100 flex flex-col items-center text-center">
+                    <svg class="w-16 h-16 mb-4 text-deep-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13.5m0-13.5a4.75 4.75 0 010 9.5m0-9.5a4.75 4.75 0 000 9.5m0-9.5L12 19.753"></path></svg>
+                    <h3 class="text-xl font-semibold mb-2 mt-2 text-deep-blue">For Visitors</h3>
+                    <p class="text-gray-600">
+                        Never get lost, save time, and enjoy a stress-free navigation experience inside any building.
+                    </p>
+                </div>
+                <!-- Benefit 2: Tenants -->
+                <div class="p-6 rounded-lg shadow-md border-2 border-gray-100 flex flex-col items-center text-center">
+                    <svg class="w-16 h-16 mb-4 text-deep-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0-1.657 1.343-3 3-3s3 1.343 3 3v2c0 1.657-1.343 3-3 3h-2c-1.657 0-3-1.343-3-3V11zm2-3c.552 0 1 .448 1 1v2c0 .552-.448 1-1 1h-2c-.552 0-1-.448-1-1v-2c0-.552.448-1 1-1h2z"></path></svg>
+                    <h3 class="text-xl font-semibold mb-2 mt-2 text-deep-blue">For Tenants</h3>
+                    <p class="text-600">
+                        Attract more customers, boost your visibility, and provide a better customer journey.
+                    </p>
+                </div>
+                <!-- Benefit 3: Building Managers -->
+                <div class="p-6 rounded-lg shadow-md border-2 border-gray-100 flex flex-col items-center text-center">
+                    <svg class="w-16 h-16 mb-4 text-deep-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0-1.657 1.343-3 3-3s3 1.343 3 3v2c0 1.657-1.343 3-3 3h-2c-1.657 0-3-1.343-3-3V11zm2-3c.552 0 1 .448 1 1v2c0 .552-.448 1-1 1h-2c-.552 0-1-.448-1-1v-2c0-.552.448-1 1-1h2z"></path></svg>
+                    <h3 class="text-xl font-semibold mb-2 mt-2 text-deep-blue">For Managers</h3>
+                    <p class="text-gray-600">
+                        Gain smart insights, improve operational efficiency, and modernize your property.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. Pricing Section -->
+        <section id="pricing" class="section-padding text-center">
+            <h2 class="text-3xl font-bold text-dark-gray mb-12">Flexible Plans for Everyone</h2>
+            
+            <div class="max-w-6xl mx-auto space-y-12">
+                <!-- Visitor Pricing -->
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-6">For Visitors</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="bg-white p-8 rounded-xl shadow-lg flex flex-col items-center">
+                            <div class="text-4xl mb-4">💡</div>
+                            <h4 class="text-xl font-bold mb-2">Basic</h4>
+                            <p class="text-4xl font-extrabold text-deep-blue mb-4">Ksh 200</p>
+                            <ul class="text-gray-600 text-left w-full space-y-2 mb-6">
+                                <li>✅ Step-by-step indoor directions</li>
+                                <li>✅ Access to 1 building</li>
+                                <li>✅ Perfect for quick visits</li>
+                            </ul>
+                            <button class="w-full bg-gray-300 text-gray-700 py-3 rounded-lg font-semibold">Current Plan</button>
+                        </div>
+                        <div class="bg-white p-8 rounded-xl shadow-lg flex flex-col items-center">
+                            <div class="text-4xl mb-4">⭐</div>
+                            <h4 class="text-xl font-bold mb-2">Standard</h4>
+                            <p class="text-4xl font-extrabold text-deep-blue mb-4">Ksh 400</p>
+                            <ul class="text-gray-600 text-left w-full space-y-2 mb-6">
+                                <li>✅ Navigation across multiple buildings</li>
+                                <li>✅ Priority route updates</li>
+                                <li>✅ Ad-free experience</li>
+                            </ul>
+                            <a href="#contact" class="button-primary w-full">Upgrade</a>
+                        </div>
+                        <div class="bg-white p-8 rounded-xl shadow-lg flex flex-col items-center">
+                            <div class="text-4xl mb-4">🚀</div>
+                            <h4 class="text-xl font-bold mb-2">Premium</h4>
+                            <p class="text-4xl font-extrabold text-deep-blue mb-4">Ksh 1,000</p>
+                            <ul class="text-gray-600 text-left w-full space-y-2 mb-6">
+                                <li>✅ Unlimited building access</li>
+                                <li>✅ Personalized navigation</li>
+                                <li>✅ Premium support & exclusive features</li>
+                            </ul>
+                            <a href="#contact" class="button-primary w-full">Upgrade</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tenant Pricing -->
+                <div>
+                    <h3 class="text-2xl font-semibold text-gray-800 mb-6">For Tenants</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div class="bg-white p-8 rounded-xl shadow-lg flex flex-col items-center">
+                            <h4 class="text-xl font-bold mb-2">Small</h4>
+                            <p class="text-4xl font-extrabold text-deep-blue mb-4">Ksh 2,000</p>
+                            <ul class="text-gray-600 text-left w-full space-y-2 mb-6">
+                                <li>✅ Listed on the in-app directory</li>
+                                <li>✅ Basic customer analytics</li>
+                                <li>✅ Standard visibility</li>
+                            </ul>
+                            <a href="#contact" class="button-primary w-full">Get Started</a>
+                        </div>
+                        <div class="bg-white p-8 rounded-xl shadow-lg flex flex-col items-center">
+                            <h4 class="text-xl font-bold mb-2">Medium</h4>
+                            <p class="text-4xl font-extrabold text-deep-blue mb-4">Ksh 5,000</p>
+                            <ul class="text-gray-600 text-left w-full space-y-2 mb-6">
+                                <li>✅ Priority placement in searches</li>
+                                <li>✅ Enhanced analytics & insights</li>
+                                <li>✅ Custom branding options</li>
+                            </ul>
+                            <a href="#contact" class="button-primary w-full">Get Started</a>
+                        </div>
+                        <div class="bg-white p-8 rounded-xl shadow-lg flex flex-col items-center">
+                            <h4 class="text-xl font-bold mb-2">Large</h4>
+                            <p class="text-4xl font-extrabold text-deep-blue mb-4">Ksh 10,000</p>
+                            <ul class="text-gray-600 text-left w-full space-y-2 mb-6">
+                                <li>✅ Premium placement & promotions</li>
+                                <li>✅ Full analytics dashboard</li>
+                                <li>✅ Dedicated support & advanced features</li>
+                            </ul>
+                            <a href="#contact" class="button-primary w-full">Get Started</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Building Manager Pricing -->
+                <div class="bg-white p-8 rounded-xl shadow-lg max-w-xl mx-auto">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-4">For Building Managers</h3>
+                    <p class="text-lg text-gray-600 mb-6">
+                        (Custom pricing available on request)
+                    </p>
+                    <ul class="text-gray-600 text-left w-full space-y-2 mb-6">
+                        <li>✅ Full building navigation setup</li>
+                        <li>✅ Foot traffic analytics & reports</li>
+                        <li>✅ AI-powered management tools</li>
+                        <li>✅ Dedicated integration support</li>
+                    </ul>
+                    <a href="#contact" class="button-primary w-full">
+                        Request a Custom Quote
+                    </a>
+                </div>
+            </div>
+
+            <!-- 7. Payment Options Section -->
+            <div class="mt-16 bg-soft-green-tint p-8 rounded-xl max-w-4xl mx-auto text-center">
+                <h3 class="text-2xl font-semibold text-gray-800 mb-6">Easy & Secure Payments</h3>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 px-4">
+                    <div class="p-4 bg-white rounded-lg shadow-sm flex flex-col items-center justify-center">
+                        <h4 class="font-bold text-gray-800">M-Pesa</h4>
+                    </div>
+                    <div class="p-4 bg-white rounded-lg shadow-sm flex flex-col items-center justify-center">
+                        <h4 class="font-bold text-gray-800">Card Payments</h4>
+                    </div>
+                    <div class="p-4 bg-white rounded-lg shadow-sm flex flex-col items-center justify-center">
+                         <svg class="w-10 h-10 mb-2 text-deep-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c2.167 0 4 1.833 4 4v4c0 2.167-1.833 4-4 4s-4-1.833-4-4v-4c0-2.167 1.833-4 4-4zM12 8V4M12 20v-4"></path></svg>
+                        <h4 class="font-bold text-gray-800">Bank Transfer</h4>
+                    </div>
+                    <div class="p-4 bg-white rounded-lg shadow-sm flex flex-col items-center justify-center">
+                        <svg class="w-10 h-10 mb-2 text-deep-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11h.01M12 15h.01M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9-4.03-9-9-9z"></path></svg>
+                        <h4 class="font-bold text-gray-800">Mobile Wallets</h4>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 8. Testimonials Section -->
+        <section id="testimonials" class="section-padding bg-soft-gray rounded-xl shadow-lg mb-20 text-center">
+            <h2 class="text-3xl font-bold text-dark-gray mb-12">What Our Users Say</h2>
+            <div id="testimonial-carousel" class="relative max-w-2xl mx-auto">
+                <div class="relative overflow-hidden">
+                    <div class="testimonial-track" id="carousel-track">
+                        <!-- Testimonial 1 -->
+                        <div class="p-8 shrink-0 w-full">
+                            <div class="flex justify-center mb-4">
+                                <span class="text-yellow-400 text-2xl">⭐⭐⭐⭐⭐</span>
+                            </div>
+                            <p class="text-xl font-medium text-gray-700 italic mb-4">
+                                "Super easy and reliable! I used the app on my first visit to Sarit Center and found my way without asking anyone."
+                            </p>
+                            <p class="font-semibold text-deep-blue">John M. – Visitor</p>
+                        </div>
+                        <!-- Testimonial 2 -->
+                        <div class="p-8 shrink-0 w-full">
+                            <div class="flex justify-center mb-4">
+                                <span class="text-yellow-400 text-2xl">⭐⭐⭐⭐⭐</span>
+                            </div>
+                            <p class="text-xl font-medium text-gray-700 italic mb-4">
+                                "Since listing my shop, I’ve noticed more customers walking in because they can find us easily on the map."
+                            </p>
+                            <p class="font-semibold text-deep-blue">Mary K. – Shop Owner</p>
+                        </div>
+                        <!-- Testimonial 3 -->
+                        <div class="p-8 shrink-0 w-full">
+                            <div class="flex justify-center mb-4">
+                                <span class="text-yellow-400 text-2xl">⭐⭐⭐⭐⭐</span>
+                            </div>
+                            <p class="text-xl font-medium text-gray-700 italic mb-4">
+                                "The analytics helped us identify peak traffic hours and improve staff deployment. A real game-changer."
+                            </p>
+                            <p class="font-semibold text-deep-blue">James O. – Building Manager</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Carousel Navigation -->
+                <button onclick="prevTestimonial()" class="absolute left-0 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors">
+                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                </button>
+                <button onclick="nextTestimonial()" class="absolute right-0 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors">
+                    <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                </button>
+            </div>
+        </section>
+
+        <!-- 9. FAQ Section -->
+        <section id="faq" class="section-padding bg-white rounded-xl shadow-lg mb-20">
+            <h2 class="text-3xl font-bold text-center text-dark-gray mb-12">Frequently Asked Questions</h2>
+            <div class="max-w-3xl mx-auto space-y-6">
+                <!-- FAQ Item 1 -->
+                <div class="bg-soft-gray rounded-lg p-6 cursor-pointer" onclick="toggleFAQ(this)">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-semibold">How do I get started as a visitor?</h3>
+                        <svg class="w-6 h-6 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                    <div class="hidden mt-4 text-gray-600">
+                        <p>Download the app from your app store, choose your plan, and start navigating instantly.</p>
+                    </div>
+                </div>
+                <!-- FAQ Item 2 -->
+                <div class="bg-soft-gray rounded-lg p-6 cursor-pointer" onclick="toggleFAQ(this)">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-semibold">Can businesses upgrade later?</h3>
+                        <svg class="w-6 h-6 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                    <div class="hidden mt-4 text-gray-600">
+                        <p>Yes. You can move from Small to Medium or Large packages anytime. Your payment will be adjusted accordingly.</p>
+                    </div>
+                </div>
+                <!-- FAQ Item 3 -->
+                <div class="bg-soft-gray rounded-lg p-6 cursor-pointer" onclick="toggleFAQ(this)">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-semibold">What payment methods are available?</h3>
+                        <svg class="w-6 h-6 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                    <div class="hidden mt-4 text-gray-600">
+                        <p>We accept M-Pesa, bank transfers, and credit/debit cards (Visa and MasterCard).</p>
+                    </div>
+                </div>
+                <!-- FAQ Item 4 -->
+                <div class="bg-soft-gray rounded-lg p-6 cursor-pointer" onclick="toggleFAQ(this)">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-xl font-semibold">Do you offer custom solutions for large buildings?</h3>
+                        <svg class="w-6 h-6 transform transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                    <div class="hidden mt-4 text-gray-600">
+                        <p>Absolutely. We provide tailored packages for malls, hospitals, corporate campuses, and airports. Please contact us for a custom quote.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 10. Call-to-Action Section -->
+        <section id="contact" class="section-padding bg-deep-blue text-white rounded-xl shadow-lg mb-20 text-center">
+            <h2 class="text-3xl font-bold mb-6">Ready to Experience Smarter Indoor Navigation?</h2>
+            <p class="text-lg mb-8 max-w-3xl mx-auto">
+                Join us and be part of the future of seamless indoor navigation.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
+                <a href="#contact" class="button-primary">
+                    Request a Demo
+                </a>
+                <a href="#pricing" class="button-secondary">
+                    Subscribe Now
+                </a>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 11. Footer -->
+    <footer class="bg-gray-800 text-white py-8">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm">
+            <p>&copy; 2024 Pathfinder. All rights reserved.</p>
+            <div class="flex justify-center space-x-4 mt-4 text-gray-400">
+                <a href="#" class="hover:text-white">Privacy Policy</a>
+                <span class="text-gray-600">|</span>
+                <a href="#" class="hover:text-white">Terms of Service</a>
+                <span class="text-gray-600">|</span>
+                <a href="#contact" class="hover:text-white">Contact</a>
+            </div>
+            <div class="flex justify-center space-x-4 mt-4">
+                <a href="#" class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 5.143 3.562 9.497 8.356 10.607V15.76H7.904V12H10.32V9.367c0-2.43 1.48-3.75 3.64-3.75 1.045 0 1.94.078 2.203.113v2.54h-1.5c-1.2 0-1.43.568-1.43 1.4v1.86h2.89l-.51 2.96h-2.38V22.607C18.438 21.497 22 17.143 22 12c0-5.523-4.477-10-10-10z"/></svg>
+                </a>
+                <a href="#" class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M18.3 4.8c.4 0 .7.3.7.7v1.7c0 .4-.3.7-.7.7h-1.7c-.4 0-.7-.3-.7-.7V5.5c0-.4.3-.7.7-.7h1.7zm-2.2 2.2c1.7 0 3.1 1.4 3.1 3.1s-1.4 3.1-3.1 3.1-3.1-1.4-3.1-3.1 1.4-3.1 3.1-3.1zm6.9 8.2v-3.7c0-2.1-1.7-3.8-3.8-3.8h-1.7c-.4 0-.7.3-.7.7v1.7c0 .4.3.7.7.7h1.7c.6 0 1 .4 1 1v1.7c0 .6-.4 1-1 1h-1.7c-.4 0-.7.3-.7.7v1.7c0 .4.3.7.7.7h1.7c2.1 0 3.8-1.7 3.8-3.8zM12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8zm4-12c-1.381 0-2.5 1.119-2.5 2.5s1.119 2.5 2.5 2.5 2.5-1.119 2.5-2.5-1.119-2.5-2.5-2.5z"/></svg>
+                </a>
+                <a href="#" class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M22.25 6.307c-.676.3-1.402.502-2.155.59a4.254 4.254 0 00-3.738-1.898c-2.736 0-4.962 2.226-4.962 4.962s2.226 4.962 4.962 4.962c.753 0 1.46-.201 2.155-.59a1.764 1.764 0 011.898 3.738c-1.526.8-3.266 1.258-5.045 1.258-4.962 0-9.02-4.058-9.02-9.02s4.058-9.02 9.02-9.02a9.02 9.02 0 017.072 3.193z"/></svg>
+                </a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Function to show the custom message box
+        function showMessageBox(title, content) {
+            try {
+                const msgBox = document.getElementById('message-box');
+                document.getElementById('message-title').textContent = title;
+                document.getElementById('message-content').textContent = content;
+                msgBox.style.display = 'block';
+            } catch (e) {
+                console.error('Error showing message box:', e);
+            }
+        }
+
+        // Function to close the custom message box
+        function closeMessageBox() {
+            try {
+                document.getElementById('message-box').style.display = 'none';
+            } catch (e) {
+                console.error('Error closing message box:', e);
+            }
+        }
+
+        // Function to toggle the mobile menu
+        function toggleMenu() {
+            try {
+                const menu = document.getElementById('mobile-menu');
+                menu.classList.toggle('hidden');
+            } catch (e) {
+                console.error('Error toggling menu:', e);
+            }
+        }
+
+        // Testimonial Carousel Logic
+        let currentTestimonial = 0;
+        const testimonials = document.querySelectorAll('#carousel-track > div');
+        const totalTestimonials = testimonials.length;
+        const track = document.getElementById('carousel-track');
+
+        function updateCarousel() {
+            try {
+                const offset = -currentTestimonial * 100;
+                track.style.transform = `translateX(${offset}%)`;
+            } catch (e) {
+                console.error('Error updating testimonial carousel:', e);
+            }
+        }
+
+        function nextTestimonial() {
+            try {
+                currentTestimonial = (currentTestimonial + 1) % totalTestimonials;
+                updateCarousel();
+            } catch (e) {
+                console.error('Error in nextTestimonial:', e);
+            }
+        }
+
+        function prevTestimonial() {
+            try {
+                currentTestimonial = (currentTestimonial - 1 + totalTestimonials) % totalTestimonials;
+                updateCarousel();
+            } catch (e) {
+                console.error('Error in prevTestimonial:', e);
+            }
+        }
+        
+        // FAQ Accordion Logic
+        function toggleFAQ(element) {
+            try {
+                const answer = element.querySelector('div:last-child');
+                const icon = element.querySelector('svg');
+                
+                if (answer.classList.contains('hidden')) {
+                    // Open the accordion
+                    answer.classList.remove('hidden');
+                    icon.classList.add('rotate-180');
+                } else {
+                    // Close the accordion
+                    answer.classList.add('hidden');
+                    icon.classList.remove('rotate-180');
+                }
+            } catch (e) {
+                console.error('Error toggling FAQ:', e);
+            }
+        }
+        
+        // Image Carousel Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                const slides = document.querySelectorAll('#carousel .carousel-item');
+                let currentSlide = 0;
+                
+                function nextSlide() {
+                    slides[currentSlide].classList.remove('active');
+                    currentSlide = (currentSlide + 1) % slides.length;
+                    slides[currentSlide].classList.add('active');
+                }
+                
+                const slideInterval = setInterval(nextSlide, 6000);
+            } catch (e) {
+                console.error('Error initializing image carousel:', e);
+            }
+        });
+    </script>
+</body>
+</html>
